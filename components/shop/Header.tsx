@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { MessageCircle, Menu, X } from 'lucide-react';
 
@@ -41,7 +40,8 @@ export default function Header({ whatsapp = '11986305013' }: HeaderProps) {
         </button>
 
         <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
-          <Image src="/assets/logo-pink-outline-horizontal.png" alt="Amor em Dia" width={160} height={40} style={{ height: 40, width: 'auto' }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/assets/logo-pink-outline-horizontal.png" alt="Amor em Dia" style={{ height: 36, width: 'auto', display: 'block' }} />
         </Link>
 
         <nav className="aed-navlinks" style={{ display: 'flex', gap: 28, marginLeft: 32 }}>

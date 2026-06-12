@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, Pencil, Check, X } from 'lucide-react';
+import { Plus, Trash2, Pencil, Check, X, Star, ChevronUp, ChevronDown } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { Category } from '@/types';
 
@@ -13,7 +13,7 @@ export default function CategoriesPanel() {
   const supabase = createClient();
 
   async function load() {
-    const { data } = await supabase.from('categories').select('*').order('name');
+    const { data } = await supabase.from('categories').select('*').order('sort_order', { ascending: true }).order('name');
     setCategories((data as Category[]) ?? []);
     setLoading(false);
   }
@@ -23,7 +23,8 @@ export default function CategoriesPanel() {
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!newName.trim()) return;
-    await supabase.from('categories').insert({ name: newName.trim() });
+    const maxOrder = categories.reduce((m, c) => Math.max(m, c.sort_order ?? 0), 0);
+    await supabase.from('categories').insert({ name: newName.trim(), sort_order: maxOrder + 1, featured: false });
     setNewName('');
     load();
   }
@@ -41,69 +42,180 @@ export default function CategoriesPanel() {
     load();
   }
 
+  async function toggleFeatured(cat: Category) {
+    const next = !cat.featured;
+    await supabase.from('categories').update({ featured: next }).eq('id', cat.id);
+    setCategories(cs => cs.map(c => c.id === cat.id ? { ...c, featured: next } : c));
+  }
+
+  async function move(index: number, dir: -1 | 1) {
+    const arr = [...categories];
+    const swapIndex = index + dir;
+    if (swapIndex < 0 || swapIndex >= arr.length) return;
+
+    const aOrder = arr[index].sort_order ?? index;
+    const bOrder = arr[swapIndex].sort_order ?? swapIndex;
+
+    await Promise.all([
+      supabase.from('categories').update({ sort_order: bOrder }).eq('id', arr[index].id),
+      supabase.from('categories').update({ sort_order: aOrder }).eq('id', arr[swapIndex].id),
+    ]);
+
+    [arr[index], arr[swapIndex]] = [arr[swapIndex], arr[index]];
+    setCategories(arr);
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '9px 12px', borderRadius: 'var(--r-sm)',
+    border: '1px solid var(--aed-line-strong)', fontFamily: 'inherit',
+    fontSize: 13, color: 'var(--fg-1)', outline: 'none',
+    background: 'var(--bg-surface)',
+  };
+
   return (
-    <div className="max-w-lg">
-      <form onSubmit={handleAdd} className="flex gap-2 mb-6">
+    <div style={{ padding: '24px 32px', maxWidth: 560 }}>
+
+      {/* Add form */}
+      <form onSubmit={handleAdd} style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
         <input
           value={newName}
           onChange={e => setNewName(e.target.value)}
           placeholder="Nome da categoria"
-          className="flex-1 border border-[var(--aed-line-strong)] rounded-sm px-3 py-2 text-sm focus:outline-none focus:border-[var(--aed-pink)]"
+          style={{ ...inputStyle, flex: 1 }}
         />
-        <button
-          type="submit"
-          className="flex items-center gap-1.5 px-4 py-2 bg-[var(--aed-pink)] text-white text-sm font-medium rounded-sm hover:bg-[var(--aed-pink-deep)] transition-colors"
-        >
-          <Plus size={15} /> Adicionar
+        <button type="submit" style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '9px 18px', borderRadius: 'var(--r-pill)',
+          border: 'none', background: 'var(--aed-pink-deep)', color: '#fff',
+          fontFamily: 'inherit', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+          whiteSpace: 'nowrap',
+        }}>
+          <Plus size={14} /> Adicionar
         </button>
       </form>
 
       {loading ? (
-        <p className="text-sm text-[var(--fg-3)]">Carregando...</p>
+        <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>Carregando...</p>
+      ) : categories.length === 0 ? (
+        <p style={{ fontSize: 13, color: 'var(--fg-3)', fontStyle: 'italic' }}>Nenhuma categoria cadastrada.</p>
       ) : (
-        <div className="flex flex-col gap-2">
-          {categories.map(cat => (
-            <div key={cat.id} className="flex items-center justify-between bg-white rounded-md px-4 py-3 border border-[var(--aed-line)] gap-2">
+        <div style={{
+          background: 'var(--bg-surface)', borderRadius: 'var(--r-md)',
+          border: '1px solid var(--aed-line)', overflow: 'hidden',
+          boxShadow: 'var(--shadow-sm)',
+        }}>
+          {/* Header */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: '28px 1fr auto auto',
+            padding: '9px 16px', borderBottom: '1px solid var(--aed-line)',
+            fontSize: 11, fontWeight: 600, color: 'var(--fg-3)',
+            textTransform: 'uppercase', letterSpacing: '.08em', gap: 12,
+          }}>
+            <span />
+            <span>Categoria</span>
+            <span style={{ paddingRight: 8 }}>Destaque</span>
+            <span>Ações</span>
+          </div>
+
+          {categories.map((cat, i) => (
+            <div key={cat.id} style={{
+              display: 'grid', gridTemplateColumns: '28px 1fr auto auto',
+              padding: '11px 16px', borderTop: '1px solid var(--aed-line)',
+              alignItems: 'center', gap: 12,
+              transition: 'background var(--dur-base)',
+            }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--aed-pink-blush)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              {/* Reorder */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <button onClick={() => move(i, -1)} disabled={i === 0} title="Mover para cima" style={{
+                  width: 20, height: 16, border: 'none', background: 'transparent',
+                  cursor: i === 0 ? 'default' : 'pointer', color: i === 0 ? 'var(--aed-line-strong)' : 'var(--fg-3)',
+                  padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}><ChevronUp size={12} /></button>
+                <button onClick={() => move(i, 1)} disabled={i === categories.length - 1} title="Mover para baixo" style={{
+                  width: 20, height: 16, border: 'none', background: 'transparent',
+                  cursor: i === categories.length - 1 ? 'default' : 'pointer',
+                  color: i === categories.length - 1 ? 'var(--aed-line-strong)' : 'var(--fg-3)',
+                  padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}><ChevronDown size={12} /></button>
+              </div>
+
+              {/* Name / edit */}
               {editingId === cat.id ? (
-                <>
-                  <input
-                    autoFocus
-                    value={editingName}
-                    onChange={e => setEditingName(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') handleRename(cat.id); if (e.key === 'Escape') setEditingId(null); }}
-                    className="flex-1 border border-[var(--aed-pink)] rounded-sm px-2 py-1 text-sm focus:outline-none"
-                  />
-                  <button onClick={() => handleRename(cat.id)} className="text-[var(--aed-success)] hover:opacity-70">
-                    <Check size={15} />
-                  </button>
-                  <button onClick={() => setEditingId(null)} className="text-[var(--fg-3)] hover:opacity-70">
-                    <X size={15} />
-                  </button>
-                </>
+                <input
+                  autoFocus
+                  value={editingName}
+                  onChange={e => setEditingName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleRename(cat.id); if (e.key === 'Escape') setEditingId(null); }}
+                  style={{ ...inputStyle, padding: '5px 8px' }}
+                />
               ) : (
-                <>
-                  <span className="text-sm text-[var(--fg-1)] flex-1">{cat.name}</span>
-                  <button
-                    onClick={() => { setEditingId(cat.id); setEditingName(cat.name); }}
-                    className="text-[var(--fg-3)] hover:text-[var(--aed-pink)] transition-colors"
-                  >
-                    <Pencil size={15} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(cat.id)}
-                    className="text-[var(--fg-3)] hover:text-[var(--aed-danger)] transition-colors"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 13, color: 'var(--fg-1)', fontWeight: 500 }}>{cat.name}</span>
+                  {cat.featured && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, padding: '2px 7px',
+                      borderRadius: 'var(--r-pill)', background: '#FFF9C9', color: '#B8920A',
+                    }}>Destaque</span>
+                  )}
+                </div>
               )}
+
+              {/* Featured toggle */}
+              <button onClick={() => toggleFeatured(cat)} title={cat.featured ? 'Remover destaque' : 'Marcar como destaque'} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '4px 11px', borderRadius: 'var(--r-pill)',
+                border: `1px solid ${cat.featured ? '#F9E25A' : 'var(--aed-line)'}`,
+                background: cat.featured ? '#FFF9C9' : 'transparent',
+                color: cat.featured ? '#B8920A' : 'var(--fg-3)',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                transition: 'all var(--dur-base)',
+              }}>
+                <Star size={11} fill={cat.featured ? 'currentColor' : 'none'} />
+                {cat.featured ? 'Destaque' : 'Destacar'}
+              </button>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: 6 }}>
+                {editingId === cat.id ? (
+                  <>
+                    <button onClick={() => handleRename(cat.id)} title="Confirmar" style={{
+                      width: 28, height: 28, borderRadius: 999, border: '1px solid var(--aed-success)',
+                      background: 'transparent', cursor: 'pointer', color: 'var(--aed-success)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}><Check size={13} /></button>
+                    <button onClick={() => setEditingId(null)} title="Cancelar" style={{
+                      width: 28, height: 28, borderRadius: 999, border: '1px solid var(--aed-line)',
+                      background: 'transparent', cursor: 'pointer', color: 'var(--fg-3)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}><X size={13} /></button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => { setEditingId(cat.id); setEditingName(cat.name); }} title="Renomear" style={{
+                      width: 28, height: 28, borderRadius: 999, border: '1px solid var(--aed-line)',
+                      background: 'transparent', cursor: 'pointer', color: 'var(--fg-2)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}><Pencil size={13} /></button>
+                    <button onClick={() => handleDelete(cat.id)} title="Excluir" style={{
+                      width: 28, height: 28, borderRadius: 999, border: '1px solid var(--aed-line)',
+                      background: 'transparent', cursor: 'pointer', color: 'var(--fg-3)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}><Trash2 size={13} /></button>
+                  </>
+                )}
+              </div>
             </div>
           ))}
-          {categories.length === 0 && (
-            <p className="text-sm text-[var(--fg-3)]">Nenhuma categoria cadastrada.</p>
-          )}
         </div>
       )}
+
+      <p style={{ marginTop: 16, fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.5 }}>
+        Use as setas para definir a ordem de exibição das categorias no site. Categorias em <strong>Destaque</strong> aparecem em evidência.
+      </p>
+
     </div>
   );
 }

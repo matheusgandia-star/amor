@@ -18,6 +18,8 @@ export interface Product {
 export interface Category {
   id: string;
   name: string;
+  featured?: boolean;
+  sort_order?: number;
   created_at?: string;
 }
 
@@ -71,5 +73,6 @@ export interface SiteSettings {
   seo_title: string;
   seo_description: string;
   favicon_url: string;
+  historia_img_url?: string;
   updated_at?: string;
 }

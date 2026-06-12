@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Plus, X, ChevronRight, MapPin, Phone, Package, CheckCircle2, Search, Minus } from 'lucide-react';
+import { Plus, X, ChevronRight, MapPin, Phone, Package, CheckCircle2, Search, Minus, Printer, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { Order, OrderStatus, PaymentStatus, ShippingType, Customer, Product } from '@/types';
 
@@ -181,6 +181,93 @@ export default function OrdersPanel() {
     load();
   }
 
+  /* ---- delete order ---- */
+  async function handleDelete(order: Order) {
+    if (!confirm(`Excluir pedido ${orderNum(order.id)} de ${order.cliente}? Esta ação não pode ser desfeita.`)) return;
+    await supabase.from('orders').delete().eq('id', order.id);
+    setSelected(null);
+    load();
+  }
+
+  /* ---- print order ---- */
+  function printOrder(order: Order) {
+    const items = (order.produtos ?? []).map(pid => {
+      const qty = order.qtds?.[pid] ?? 1;
+      const prod = products.find(p => p.id === pid);
+      return `<tr>
+        <td style="padding:8px 12px;border-bottom:1px solid #f0dadd">${prod?.name ?? pid}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #f0dadd;text-align:center">${qty}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #f0dadd;text-align:right">R$ ${prod ? (prod.price).toFixed(2).replace('.', ',') : '—'}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #f0dadd;text-align:right;font-weight:600">R$ ${prod ? (prod.price * qty).toFixed(2).replace('.', ',') : '—'}</td>
+      </tr>`;
+    }).join('');
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pedido ${orderNum(order.id)}</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:'Quicksand',Arial,sans-serif;font-size:13px;color:#3c2a2d;padding:32px;max-width:600px;margin:0 auto}
+      h1{font-size:22px;font-weight:600;color:#e88a92;margin-bottom:4px}
+      .sub{color:#9c8288;font-size:12px;margin-bottom:24px}
+      .section{margin-bottom:20px}
+      .label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#9c8288;font-weight:600;margin-bottom:8px}
+      .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600}
+      table{width:100%;border-collapse:collapse;margin-top:8px}
+      th{background:#fde9eb;padding:8px 12px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#9c8288}
+      th:last-child,td:last-child{text-align:right}
+      th:nth-child(2),td:nth-child(2){text-align:center}
+      .total-row td{padding:10px 12px;font-size:14px;font-weight:700;color:#e88a92;border-top:2px solid #f4a6ac}
+      .divider{border:none;border-top:1px solid #f0dadd;margin:16px 0}
+      .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px}
+      .kv{margin-bottom:6px}
+      .kv span{font-size:11px;color:#9c8288;display:block}
+      .kv strong{font-size:13px;color:#3c2a2d}
+      @media print{body{padding:16px}}
+    </style></head><body>
+    <h1>Amor em Dia ✿</h1>
+    <div class="sub">Pedido ${orderNum(order.id)} · ${new Date(order.data || '').toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+
+    <div class="section">
+      <div class="label">Status</div>
+      <span class="pill" style="background:${STATUS_META[order.status ?? 'novo'].bg};color:${STATUS_META[order.status ?? 'novo'].color}">${STATUS_META[order.status ?? 'novo'].label}</span>
+      &nbsp;
+      <span class="pill" style="background:${PGTO_META[order.status_pgto ?? 'aguardando'].bg};color:${PGTO_META[order.status_pgto ?? 'aguardando'].color}">${PGTO_META[order.status_pgto ?? 'aguardando'].label}</span>
+    </div>
+
+    <div class="section">
+      <div class="label">Cliente</div>
+      <div class="grid">
+        <div class="kv"><span>Nome</span><strong>${order.cliente || '—'}</strong></div>
+        <div class="kv"><span>WhatsApp</span><strong>${order.whatsapp || '—'}</strong></div>
+        <div class="kv"><span>Endereço</span><strong>${[order.endereco, order.cidade, order.cep].filter(Boolean).join(', ') || '—'}</strong></div>
+        <div class="kv"><span>Envio</span><strong>${SHIP_LABELS[order.envio ?? 'correios']}</strong></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="label">Itens do pedido</div>
+      <table>
+        <thead><tr><th>Produto</th><th>Qtd.</th><th>Preço unit.</th><th>Subtotal</th></tr></thead>
+        <tbody>${items}</tbody>
+      </table>
+    </div>
+
+    <hr class="divider"/>
+    <table>
+      <tr><td style="padding:6px 12px;color:#9c8288">Produtos</td><td style="padding:6px 12px;text-align:right">R$ ${Number(order.subtotal ?? 0).toFixed(2).replace('.', ',')}</td></tr>
+      <tr><td style="padding:6px 12px;color:#9c8288">Frete (${SHIP_LABELS[order.envio ?? 'correios']})</td><td style="padding:6px 12px;text-align:right">${Number(order.frete) === 0 ? 'Grátis' : `R$ ${Number(order.frete).toFixed(2).replace('.', ',')}`}</td></tr>
+      ${order.pgto ? `<tr><td style="padding:6px 12px;color:#9c8288">Pagamento</td><td style="padding:6px 12px;text-align:right">${order.pgto}</td></tr>` : ''}
+      <tr class="total-row"><td>Total</td><td>R$ ${Number(order.total ?? 0).toFixed(2).replace('.', ',')}</td></tr>
+    </table>
+
+    <hr class="divider"/>
+    <div style="font-size:11px;color:#9c8288;text-align:center;margin-top:16px">Amor em Dia · Sabonetes Artesanais ✿</div>
+    <script>window.onload=()=>{window.print();}</script>
+    </body></html>`;
+
+    const win = window.open('', '_blank', 'width=700,height=900');
+    if (win) { win.document.write(html); win.document.close(); }
+  }
+
   /* ---- open edit form ---- */
   function openEdit(order: Order) {
     setForm({
@@ -265,7 +352,7 @@ export default function OrdersPanel() {
         p.name.toLowerCase().includes(prodSearch.toLowerCase()) &&
         !form.produtos.includes(p.id)
       )
-    : products.filter(p => !form.produtos.includes(p.id)).slice(0, 6);
+    : [];
 
   /* ---- input helper ---- */
   function Field({ label, k, type = 'text', span }: { label: string; k: keyof ReturnType<typeof emptyForm>; type?: string; span?: boolean }) {
@@ -592,19 +679,30 @@ export default function OrdersPanel() {
             </div>
 
             {/* Actions */}
-            <div style={{ padding: '20px 24px', display: 'flex', gap: 10, marginTop: 'auto' }}>
-              <button onClick={() => openEdit(selected)} style={{
-                flex: 1, padding: '12px', borderRadius: 'var(--r-pill)',
-                border: '1.5px solid var(--aed-pink)', background: 'transparent',
-                color: 'var(--aed-pink-deep)', fontFamily: 'inherit', fontSize: 13,
-                fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', gap: 6,
-              }}>
-                ✏️ Editar pedido
-              </button>
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 10, marginTop: 'auto' }}>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => openEdit(selected)} style={{
+                  flex: 1, padding: '11px', borderRadius: 'var(--r-pill)',
+                  border: '1.5px solid var(--aed-pink)', background: 'transparent',
+                  color: 'var(--aed-pink-deep)', fontFamily: 'inherit', fontSize: 13,
+                  fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', gap: 6,
+                }}>
+                  ✏️ Editar
+                </button>
+                <button onClick={() => printOrder(selected)} style={{
+                  flex: 1, padding: '11px', borderRadius: 'var(--r-pill)',
+                  border: '1.5px solid var(--aed-line-strong)', background: 'transparent',
+                  color: 'var(--fg-2)', fontFamily: 'inherit', fontSize: 13,
+                  fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', gap: 6,
+                }}>
+                  <Printer size={14} /> Imprimir
+                </button>
+              </div>
               {selected.status !== 'entregue' && selected.status !== 'cancelado' && (
                 <button onClick={() => advanceStatus(selected)} style={{
-                  flex: 1, padding: '12px', borderRadius: 'var(--r-pill)',
+                  width: '100%', padding: '11px', borderRadius: 'var(--r-pill)',
                   border: 'none', background: 'var(--aed-pink-deep)', color: '#fff',
                   fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
                   cursor: 'pointer', display: 'flex', alignItems: 'center',
@@ -613,6 +711,15 @@ export default function OrdersPanel() {
                   Avançar status <ChevronRight size={15} />
                 </button>
               )}
+              <button onClick={() => handleDelete(selected)} style={{
+                width: '100%', padding: '10px', borderRadius: 'var(--r-pill)',
+                border: '1.5px solid #FDECEA', background: 'transparent',
+                color: 'var(--aed-danger)', fontFamily: 'inherit', fontSize: 13,
+                fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', gap: 6,
+              }}>
+                <Trash2 size={14} /> Excluir pedido
+              </button>
             </div>
           </div>
         </div>

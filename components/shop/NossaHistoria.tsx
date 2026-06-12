@@ -1,4 +1,4 @@
-export default function NossaHistoria() {
+export default function NossaHistoria({ historiaImgUrl }: { historiaImgUrl?: string }) {
   return (
     <section id="nossa-historia" style={{
       background: 'var(--aed-cream)',
@@ -18,14 +18,25 @@ export default function NossaHistoria() {
             borderRadius: 'var(--r-xl)',
             background: 'linear-gradient(145deg, var(--aed-pink-soft), var(--aed-cream) 70%)',
             aspectRatio: '1/1', maxWidth: 480,
+            overflow: 'hidden',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexDirection: 'column', gap: 16,
             boxShadow: 'var(--shadow-md)',
           }}>
-            <div style={{ fontSize: 72 }}>🧼</div>
-            <div style={{ fontFamily: 'var(--font-script)', fontSize: 28, color: 'var(--aed-pink-deep)' }}>
-              Feito com amor
-            </div>
+            {historiaImgUrl ? (
+              <img
+                src={historiaImgUrl}
+                alt="Nossa história"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+            ) : (
+              <>
+                <div style={{ fontSize: 72 }}>🧼</div>
+                <div style={{ fontFamily: 'var(--font-script)', fontSize: 28, color: 'var(--aed-pink-deep)' }}>
+                  Feito com amor
+                </div>
+              </>
+            )}
           </div>
           {/* Badge flutuante */}
           <div style={{

@@ -35,7 +35,7 @@ export default async function Home() {
         categories={(categories as Category[]) ?? []}
         whatsapp={settings?.whatsapp}
       />
-      <NossaHistoria />
+      <NossaHistoria historiaImgUrl={settings?.historia_img_url} />
       <Newsletter />
       <Footer whatsapp={settings?.whatsapp} instagram={settings?.instagram} />
     </main>
