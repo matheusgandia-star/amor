@@ -1,8 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Plus, X, ChevronRight, MapPin, Phone, Package, CheckCircle2 } from 'lucide-react';
+import { Plus, X, ChevronRight, MapPin, Phone, Package, CheckCircle2, Search, Minus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import type { Order, OrderStatus, PaymentStatus, ShippingType, Customer } from '@/types';
+import type { Order, OrderStatus, PaymentStatus, ShippingType, Customer, Product } from '@/types';
 
 /* ---- constants ---- */
 
@@ -110,6 +110,7 @@ const emptyForm = () => ({
 export default function OrdersPanel() {
   const [orders, setOrders]         = useState<Order[]>([]);
   const [customers, setCustomers]   = useState<Customer[]>([]);
+  const [products, setProducts]     = useState<Product[]>([]);
   const [loading, setLoading]       = useState(true);
   const [filter, setFilter]         = useState<OrderStatus | 'todos'>('todos');
   const [selected, setSelected]     = useState<Order | null>(null);
@@ -118,15 +119,18 @@ export default function OrdersPanel() {
   const [form, setForm]             = useState(emptyForm());
   const [saving, setSaving]         = useState(false);
   const [custSearch, setCustSearch] = useState('');
+  const [prodSearch, setProdSearch] = useState('');
   const supabase = createClient();
 
   async function load() {
-    const [{ data: o }, { data: c }] = await Promise.all([
+    const [{ data: o }, { data: c }, { data: p }] = await Promise.all([
       supabase.from('orders').select('*').order('created_at', { ascending: false }),
       supabase.from('customers').select('*').order('nome'),
+      supabase.from('products').select('*').order('name'),
     ]);
     setOrders((o as Order[]) ?? []);
     setCustomers((c as Customer[]) ?? []);
+    setProducts((p as Product[]) ?? []);
     setLoading(false);
   }
 
@@ -217,6 +221,51 @@ export default function OrdersPanel() {
   const custFiltered = custSearch.length >= 1
     ? customers.filter(c => c.nome.toLowerCase().includes(custSearch.toLowerCase()))
     : [];
+
+  /* ---- product helpers ---- */
+  function calcSubtotal(qtds: Record<string, number>) {
+    return Object.entries(qtds).reduce((sum, [id, qty]) => {
+      const p = products.find(p => p.id === id);
+      return sum + (p ? p.price * qty : 0);
+    }, 0);
+  }
+
+  function addProduct(p: Product) {
+    setForm(f => {
+      const qtds = { ...f.qtds, [p.id]: (f.qtds[p.id] ?? 0) + 1 };
+      const produtos = f.produtos.includes(p.id) ? f.produtos : [...f.produtos, p.id];
+      const subtotal = calcSubtotal(qtds);
+      return { ...f, produtos, qtds, subtotal };
+    });
+    setProdSearch('');
+  }
+
+  function removeProduct(id: string) {
+    setForm(f => {
+      const qtds = { ...f.qtds };
+      delete qtds[id];
+      const produtos = f.produtos.filter(pid => pid !== id);
+      const subtotal = calcSubtotal(qtds);
+      return { ...f, produtos, qtds, subtotal };
+    });
+  }
+
+  function changeQty(id: string, delta: number) {
+    setForm(f => {
+      const current = f.qtds[id] ?? 1;
+      const next = Math.max(1, current + delta);
+      const qtds = { ...f.qtds, [id]: next };
+      const subtotal = calcSubtotal(qtds);
+      return { ...f, qtds, subtotal };
+    });
+  }
+
+  const prodFiltered = prodSearch.length >= 1
+    ? products.filter(p =>
+        p.name.toLowerCase().includes(prodSearch.toLowerCase()) &&
+        !form.produtos.includes(p.id)
+      )
+    : products.filter(p => !form.produtos.includes(p.id)).slice(0, 6);
 
   /* ---- input helper ---- */
   function Field({ label, k, type = 'text', span }: { label: string; k: keyof ReturnType<typeof emptyForm>; type?: string; span?: boolean }) {
@@ -484,17 +533,31 @@ export default function OrdersPanel() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {selected.produtos.map(pid => {
                     const qty = selected.qtds?.[pid] ?? 1;
+                    const prod = products.find(p => p.id === pid);
                     return (
                       <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{
-                          width: 44, height: 44, borderRadius: 'var(--r-sm)', flexShrink: 0,
-                          background: 'linear-gradient(135deg, var(--aed-pink-soft), var(--aed-cream))',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}><Package size={18} color="var(--aed-pink-deep)" /></div>
-                        <div style={{ flex: 1, fontSize: 13, color: 'var(--fg-1)' }}>
-                          <div style={{ fontWeight: 500 }}>{pid}</div>
-                          <div style={{ fontSize: 11, color: 'var(--fg-3)' }}>Qtd: {qty}</div>
+                        {prod?.photos?.[0] ? (
+                          <img src={prod.photos[0]} alt={prod.name} style={{ width: 44, height: 44, borderRadius: 'var(--r-sm)', objectFit: 'cover', flexShrink: 0 }} />
+                        ) : (
+                          <div style={{
+                            width: 44, height: 44, borderRadius: 'var(--r-sm)', flexShrink: 0,
+                            background: prod?.color ?? 'linear-gradient(135deg, var(--aed-pink-soft), var(--aed-cream))',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}><Package size={18} color="var(--aed-pink-deep)" /></div>
+                        )}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {prod?.name ?? pid}
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--fg-3)' }}>
+                            {qty}× {prod ? `R$ ${prod.price.toFixed(2).replace('.', ',')}` : ''}
+                          </div>
                         </div>
+                        {prod && (
+                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-1)', flexShrink: 0 }}>
+                            R$ {(prod.price * qty).toFixed(2).replace('.', ',')}
+                          </span>
+                        )}
                       </div>
                     );
                   })}
@@ -635,7 +698,112 @@ export default function OrdersPanel() {
                 </div>
               </div>
 
-              {/* 2-col grid */}
+              {/* ---- Products section ---- */}
+              <div>
+                <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-3)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em' }}>
+                  Produtos
+                </label>
+
+                {/* Selected products */}
+                {form.produtos.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                    {form.produtos.map(pid => {
+                      const p = products.find(p => p.id === pid);
+                      if (!p) return null;
+                      const qty = form.qtds[pid] ?? 1;
+                      return (
+                        <div key={pid} style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '10px 12px', borderRadius: 'var(--r-sm)',
+                          background: 'var(--aed-pink-mist)', border: '1px solid var(--aed-pink-soft)',
+                        }}>
+                          {p.photos?.[0] ? (
+                            <img src={p.photos[0]} alt={p.name} style={{ width: 40, height: 40, borderRadius: 'var(--r-sm)', objectFit: 'cover', flexShrink: 0 }} />
+                          ) : (
+                            <div style={{ width: 40, height: 40, borderRadius: 'var(--r-sm)', flexShrink: 0, background: p.color || 'var(--aed-pink-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Package size={16} color="var(--aed-pink-deep)" />
+                            </div>
+                          )}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--aed-pink-deep)', fontWeight: 600 }}>R$ {(p.price * qty).toFixed(2).replace('.', ',')}</div>
+                          </div>
+                          {/* Qty controls */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                            <button type="button" onClick={() => changeQty(pid, -1)} style={{
+                              width: 26, height: 26, borderRadius: 999, border: '1px solid var(--aed-line-strong)',
+                              background: 'var(--bg-surface)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--fg-2)',
+                            }}><Minus size={12} /></button>
+                            <span style={{ fontSize: 13, fontWeight: 600, minWidth: 20, textAlign: 'center', color: 'var(--fg-1)' }}>{qty}</span>
+                            <button type="button" onClick={() => changeQty(pid, +1)} style={{
+                              width: 26, height: 26, borderRadius: 999, border: '1px solid var(--aed-line-strong)',
+                              background: 'var(--bg-surface)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--fg-2)',
+                            }}><Plus size={12} /></button>
+                          </div>
+                          <button type="button" onClick={() => removeProduct(pid)} style={{
+                            width: 26, height: 26, borderRadius: 999, border: 'none',
+                            background: 'transparent', cursor: 'pointer', color: 'var(--fg-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                          }}><X size={14} /></button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Product search */}
+                <div style={{ position: 'relative' }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    border: '1px solid var(--aed-line-strong)', borderRadius: 'var(--r-sm)',
+                    padding: '9px 12px', background: 'var(--bg-surface)',
+                  }}>
+                    <Search size={14} color="var(--fg-3)" />
+                    <input
+                      type="text"
+                      value={prodSearch}
+                      onChange={e => setProdSearch(e.target.value)}
+                      placeholder={products.length === 0 ? 'Nenhum produto cadastrado' : 'Buscar produto para adicionar…'}
+                      disabled={products.length === 0}
+                      style={{ border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 13, color: 'var(--fg-1)', flex: 1 }}
+                    />
+                  </div>
+                  {prodFiltered.length > 0 && (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20,
+                      background: 'var(--bg-surface)', border: '1px solid var(--aed-line)',
+                      borderRadius: 'var(--r-sm)', boxShadow: 'var(--shadow-md)',
+                      maxHeight: 240, overflowY: 'auto', marginTop: 2,
+                    }}>
+                      {prodFiltered.map(p => (
+                        <button key={p.id} type="button" onClick={() => addProduct(p)} style={{
+                          display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                          padding: '10px 14px', border: 'none', background: 'transparent',
+                          cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
+                          borderBottom: '1px solid var(--aed-line)',
+                        }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--aed-pink-blush)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          {p.photos?.[0] ? (
+                            <img src={p.photos[0]} alt={p.name} style={{ width: 36, height: 36, borderRadius: 'var(--r-sm)', objectFit: 'cover', flexShrink: 0 }} />
+                          ) : (
+                            <div style={{ width: 36, height: 36, borderRadius: 'var(--r-sm)', flexShrink: 0, background: p.color || 'var(--aed-pink-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Package size={14} color="var(--aed-pink-deep)" />
+                            </div>
+                          )}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--fg-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--fg-3)' }}>R$ {p.price.toFixed(2).replace('.', ',')} · Estoque: {p.stock ?? 0}</div>
+                          </div>
+                          <Plus size={14} color="var(--aed-pink-deep)" style={{ flexShrink: 0 }} />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ---- 2-col grid ---- */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <Field label="WhatsApp" k="whatsapp" />
                 <Field label="Data" k="data" type="date" />
@@ -655,7 +823,6 @@ export default function OrdersPanel() {
                   </select>
                 </div>
                 <Field label="Pagamento" k="pgto" />
-                <Field label="Subtotal (R$)" k="subtotal" type="number" />
                 <Field label="Frete (R$)" k="frete" type="number" />
 
                 <div>
@@ -680,14 +847,26 @@ export default function OrdersPanel() {
 
               {/* Total preview */}
               <div style={{
-                padding: '12px 16px', borderRadius: 'var(--r-sm)',
+                padding: '14px 16px', borderRadius: 'var(--r-sm)',
                 background: 'var(--aed-pink-mist)', border: '1px solid var(--aed-pink-soft)',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                display: 'flex', flexDirection: 'column', gap: 8,
               }}>
-                <span style={{ fontSize: 13, color: 'var(--fg-2)' }}>Total do pedido</span>
-                <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--aed-pink-deep)' }}>
-                  R$ {(Number(form.subtotal) + Number(form.frete)).toFixed(2).replace('.', ',')}
-                </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--fg-2)' }}>
+                  <span>Produtos ({form.produtos.length} {form.produtos.length === 1 ? 'item' : 'itens'})</span>
+                  <span>R$ {Number(form.subtotal).toFixed(2).replace('.', ',')}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--fg-2)' }}>
+                  <span>Frete</span>
+                  <span>{Number(form.frete) === 0 ? 'grátis' : `R$ ${Number(form.frete).toFixed(2).replace('.', ',')}`}</span>
+                </div>
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between',
+                  fontSize: 15, fontWeight: 700, color: 'var(--aed-pink-deep)',
+                  paddingTop: 8, borderTop: '1px solid var(--aed-pink-soft)',
+                }}>
+                  <span>Total</span>
+                  <span>R$ {(Number(form.subtotal) + Number(form.frete)).toFixed(2).replace('.', ',')}</span>
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 4 }}>
