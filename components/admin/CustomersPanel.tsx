@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Pencil, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { Customer } from '@/types';
 
@@ -10,6 +10,7 @@ export default function CustomersPanel() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [form, setForm] = useState(empty);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
@@ -21,12 +22,33 @@ export default function CustomersPanel() {
 
   useEffect(() => { load(); }, []);
 
+  function openNew() {
+    setEditingId(null);
+    setForm(empty);
+    setShowForm(true);
+  }
+
+  function openEdit(c: Customer) {
+    setEditingId(c.id);
+    setForm({ nome: c.nome, whatsapp: c.whatsapp, endereco: c.endereco, cidade: c.cidade, cep: c.cep });
+    setShowForm(true);
+  }
+
+  function closeForm() {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(empty);
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!form.nome.trim()) return;
-    await supabase.from('customers').insert(form);
-    setForm(empty);
-    setShowForm(false);
+    if (editingId) {
+      await supabase.from('customers').update(form).eq('id', editingId);
+    } else {
+      await supabase.from('customers').insert(form);
+    }
+    closeForm();
     load();
   }
 
@@ -36,20 +58,28 @@ export default function CustomersPanel() {
     load();
   }
 
+  const fields: [keyof typeof empty, string][] = [
+    ['nome', 'Nome *'], ['whatsapp', 'WhatsApp'], ['endereco', 'Endereço'], ['cidade', 'Cidade'], ['cep', 'CEP'],
+  ];
+
   return (
     <div className="max-w-2xl">
       <button
-        onClick={() => setShowForm(v => !v)}
+        onClick={showForm && !editingId ? closeForm : openNew}
         className="flex items-center gap-2 mb-4 px-4 py-2 bg-[var(--aed-pink)] text-white text-sm font-medium rounded-sm hover:bg-[var(--aed-pink-deep)] transition-colors"
       >
         <Plus size={15} />
         Novo cliente
-        {showForm ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        {showForm && !editingId ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
       </button>
 
       {showForm && (
         <form onSubmit={handleSave} className="bg-white rounded-md p-4 border border-[var(--aed-line)] mb-6 grid grid-cols-2 gap-3">
-          {([['nome','Nome *','text'], ['whatsapp','WhatsApp','text'], ['endereco','Endereço','text'], ['cidade','Cidade','text'], ['cep','CEP','text']] as [keyof typeof empty, string, string][]).map(([k, label]) => (
+          <div className="col-span-2 flex justify-between items-center">
+            <p className="text-sm font-medium text-[var(--fg-1)]">{editingId ? 'Editar cliente' : 'Novo cliente'}</p>
+            <button type="button" onClick={closeForm}><X size={16} className="text-[var(--fg-3)]" /></button>
+          </div>
+          {fields.map(([k, label]) => (
             <div key={k} className={k === 'nome' || k === 'endereco' ? 'col-span-2' : ''}>
               <label className="text-xs text-[var(--fg-3)] mb-1 block">{label}</label>
               <input
@@ -60,7 +90,7 @@ export default function CustomersPanel() {
             </div>
           ))}
           <div className="col-span-2 flex gap-2 justify-end mt-2">
-            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-[var(--fg-2)] border border-[var(--aed-line)] rounded-sm">Cancelar</button>
+            <button type="button" onClick={closeForm} className="px-4 py-2 text-sm text-[var(--fg-2)] border border-[var(--aed-line)] rounded-sm">Cancelar</button>
             <button type="submit" className="px-4 py-2 text-sm bg-[var(--aed-pink)] text-white rounded-sm hover:bg-[var(--aed-pink-deep)]">Salvar</button>
           </div>
         </form>
@@ -77,9 +107,14 @@ export default function CustomersPanel() {
                 {c.whatsapp && <p className="text-xs text-[var(--fg-3)]">📱 {c.whatsapp}</p>}
                 {c.cidade && <p className="text-xs text-[var(--fg-3)]">{c.cidade}</p>}
               </div>
-              <button onClick={() => handleDelete(c.id)} className="text-[var(--fg-3)] hover:text-[var(--aed-danger)] mt-0.5">
-                <Trash2 size={15} />
-              </button>
+              <div className="flex gap-2 mt-0.5">
+                <button onClick={() => openEdit(c)} className="text-[var(--fg-3)] hover:text-[var(--aed-pink)] transition-colors">
+                  <Pencil size={15} />
+                </button>
+                <button onClick={() => handleDelete(c.id)} className="text-[var(--fg-3)] hover:text-[var(--aed-danger)] transition-colors">
+                  <Trash2 size={15} />
+                </button>
+              </div>
             </div>
           ))}
           {customers.length === 0 && <p className="text-sm text-[var(--fg-3)]">Nenhum cliente cadastrado.</p>}
