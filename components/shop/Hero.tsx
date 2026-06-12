@@ -9,14 +9,24 @@ interface HeroProps {
   whatsapp?: string;
 }
 
+const BADGES = [
+  { icon: '🌿', text: 'Ingredientes naturais' },
+  { icon: '🤍', text: 'Feito à mão' },
+  { icon: '🌸', text: 'Aromas exclusivos' },
+];
+
 export default function Hero({
   bannerUrl,
   bannerMobileUrl,
-  title = 'Amor em cada detalhe',
+  title,
   subtitle = 'Sabonetes e produtos artesanais criados com ingredientes selecionados, aromas que despertam memórias e muito carinho em cada detalhe.',
   whatsapp = '11986305013',
 }: HeroProps) {
-  const waLink = `https://wa.me/55${whatsapp.replace(/\D/g, '')}`;
+  const waLink = `https://wa.me/55${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Quero ver a coleção 🩷')}`;
+
+  const titleLines = title
+    ? [title, null]
+    : ['Amor em cada', 'detalhe'];
 
   return (
     <section style={{
@@ -28,9 +38,15 @@ export default function Hero({
         {/* Texto */}
         <div>
           <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
             fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
-            letterSpacing: '.14em', color: 'var(--aed-pink-deep)', marginBottom: 16,
-          }}>· Coleção ·</div>
+            letterSpacing: '.14em', color: 'var(--aed-pink-deep)',
+            marginBottom: 20,
+          }}>
+            <span style={{ width: 20, height: 1, background: 'var(--aed-pink)' }} />
+            Coleção
+            <span style={{ width: 20, height: 1, background: 'var(--aed-pink)' }} />
+          </div>
 
           <h1 style={{
             fontFamily: 'var(--font-display)', fontWeight: 300,
@@ -38,8 +54,9 @@ export default function Hero({
             color: 'var(--aed-pink-deep)', margin: '0 0 8px',
             letterSpacing: '-0.01em',
           }}>
-            {title}{' '}
-            <span style={{ fontFamily: 'var(--font-script)', color: 'var(--aed-pink-signature)', fontWeight: 400 }}>
+            {titleLines[0]}<br />
+            {titleLines[1]}{' '}
+            <span style={{ fontFamily: 'var(--font-script)', color: 'var(--aed-pink-signature)', fontWeight: 400, fontSize: '1.1em' }}>
               feito à mão
             </span>
           </h1>
@@ -52,12 +69,28 @@ export default function Hero({
             {subtitle}
           </p>
 
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 36 }}>
+            {BADGES.map(b => (
+              <div key={b.text} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                fontSize: 12.5, fontWeight: 500, color: 'var(--fg-2)',
+                background: 'var(--bg-surface)', border: '1px solid var(--aed-line)',
+                borderRadius: 'var(--r-pill)', padding: '7px 14px',
+                boxShadow: 'var(--shadow-xs)',
+              }}>
+                <span>{b.icon}</span>
+                {b.text}
+              </div>
+            ))}
+          </div>
+
           <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
             display: 'inline-flex', alignItems: 'center', gap: 10,
             textDecoration: 'none', fontFamily: 'var(--font-body)',
             fontSize: 15, fontWeight: 600, color: '#fff',
-            background: '#25D366', padding: '16px 30px',
+            background: 'var(--aed-pink-deep)', padding: '16px 30px',
             borderRadius: 'var(--r-pill)', boxShadow: 'var(--shadow-sm)',
+            transition: 'all var(--dur-base) var(--ease-soft)',
           }}>
             <MessageCircle size={18} />
             Descubra a coleção
@@ -81,14 +114,13 @@ export default function Hero({
               background: 'linear-gradient(145deg, var(--aed-pink-soft), var(--aed-cream) 70%)',
               boxShadow: 'var(--shadow-md)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexDirection: 'column', gap: 8,
+              flexDirection: 'column', gap: 12,
             }}>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--aed-pink-deep)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <polyline points="21 15 16 10 5 21"/>
-              </svg>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--fg-3)' }}>
+              <div style={{ fontSize: 48 }}>🩷</div>
+              <div style={{ fontFamily: 'var(--font-script)', fontSize: 22, color: 'var(--aed-pink-deep)' }}>
+                Amor em Dia
+              </div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--fg-3)', textAlign: 'center', maxWidth: 160 }}>
                 Adicione um banner no Admin
               </div>
             </div>

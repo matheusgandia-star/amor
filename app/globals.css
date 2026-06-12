@@ -14,8 +14,16 @@
   --aed-pink-signature:  #FDD9DB;
 
   --aed-sun:             #FEF387;
+  --aed-sun-deep:        #F9E25A;
+  --aed-sun-soft:        #FFF9C9;
+
+  --aed-ocean:           #37D3D6;
+  --aed-ocean-deep:      #1FB3B6;
+  --aed-ocean-soft:      #B8EFF0;
+
   --aed-cream:           #FBF6EC;
   --aed-sage:            #B8C9A8;
+  --aed-sage-deep:       #8AA37A;
   --aed-kraft:           #C9A67A;
   --aed-ink:             #3C2A2D;
   --aed-ink-soft:        #6B4F55;
@@ -30,6 +38,50 @@
   --aed-success:         #7FB28A;
   --aed-warn:            #E8A961;
   --aed-danger:          #D97068;
+  --aed-info:            #6FB8D8;
+
+  --fg-on-pink:          #ffffff;
+  --fg-on-cream:         var(--aed-ink);
+  --bg-tint:             var(--aed-pink-mist);
+  --bg-tint-cream:       var(--aed-cream);
+  --border-subtle:       var(--aed-line);
+  --border-strong:       var(--aed-line-strong);
+  --border-brand:        var(--aed-pink);
+
+  /* Spacing scale */
+  --s-1:   4px;
+  --s-2:   8px;
+  --s-3:   12px;
+  --s-4:   16px;
+  --s-5:   24px;
+  --s-6:   32px;
+  --s-7:   48px;
+  --s-8:   64px;
+  --s-9:   96px;
+
+  /* Font sizes */
+  --fs-h1:    clamp(40px, 5vw, 64px);
+  --fs-h2:    clamp(30px, 3.2vw, 44px);
+  --fs-h3:    clamp(22px, 2.2vw, 28px);
+  --fs-h4:    18px;
+  --fs-body:  16px;
+  --fs-small: 14px;
+  --fs-micro: 12px;
+
+  /* Line heights */
+  --lh-tight:   1.1;
+  --lh-display: 1.15;
+  --lh-body:    1.6;
+  --lh-loose:   1.8;
+
+  /* Tracking */
+  --tracking-wide:   0.08em;
+  --tracking-normal: 0em;
+  --tracking-tight:  -0.01em;
+
+  /* Motion extra */
+  --ease-bounce: cubic-bezier(.34,1.56,.64,1);
+  --dur-fast:    140ms;
 
   --fg-1:                var(--aed-ink);
   --fg-2:                var(--aed-ink-soft);
