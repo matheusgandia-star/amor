@@ -3,7 +3,6 @@ import Header from '@/components/shop/Header';
 import Hero from '@/components/shop/Hero';
 import ProductGrid from '@/components/shop/ProductGrid';
 import NossaHistoria from '@/components/shop/NossaHistoria';
-import Newsletter from '@/components/shop/Newsletter';
 import Footer from '@/components/shop/Footer';
 import type { Product, Category, SiteSettings } from '@/types';
 
@@ -36,7 +35,6 @@ export default async function Home() {
         whatsapp={settings?.whatsapp}
       />
       <NossaHistoria historiaImgUrl={settings?.historia_img_url} />
-      <Newsletter />
       <Footer whatsapp={settings?.whatsapp} instagram={settings?.instagram} />
     </main>
   );

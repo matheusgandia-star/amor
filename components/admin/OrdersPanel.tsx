@@ -354,26 +354,6 @@ export default function OrdersPanel() {
       )
     : [];
 
-  /* ---- input helper ---- */
-  function Field({ label, k, type = 'text', span }: { label: string; k: keyof ReturnType<typeof emptyForm>; type?: string; span?: boolean }) {
-    return (
-      <div style={span ? { gridColumn: '1 / -1' } : {}}>
-        <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-3)', marginBottom: 5, fontWeight: 500 }}>{label}</label>
-        <input
-          type={type}
-          value={String(form[k] ?? '')}
-          onChange={e => setForm(f => ({ ...f, [k]: type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value }))}
-          style={{
-            width: '100%', padding: '9px 12px',
-            borderRadius: 'var(--r-sm)', border: '1px solid var(--aed-line-strong)',
-            fontFamily: 'inherit', fontSize: 13, color: 'var(--fg-1)', outline: 'none',
-            background: 'var(--bg-surface)',
-          }}
-        />
-      </div>
-    );
-  }
-
   /* ================================================================
      RENDER
      ================================================================ */
@@ -912,11 +892,33 @@ export default function OrdersPanel() {
 
               {/* ---- 2-col grid ---- */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <Field label="WhatsApp" k="whatsapp" />
-                <Field label="Data" k="data" type="date" />
-                <Field label="Endereço" k="endereco" span />
-                <Field label="Cidade" k="cidade" />
-                <Field label="CEP" k="cep" />
+                {([
+                  { label: 'WhatsApp', k: 'whatsapp' as const },
+                  { label: 'Data', k: 'data' as const, type: 'date' },
+                ] as { label: string; k: keyof ReturnType<typeof emptyForm>; type?: string }[]).map(({ label, k, type = 'text' }) => (
+                  <div key={k}>
+                    <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-3)', marginBottom: 5, fontWeight: 500 }}>{label}</label>
+                    <input type={type} value={String(form[k] ?? '')} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--aed-line-strong)', fontFamily: 'inherit', fontSize: 13, color: 'var(--fg-1)', outline: 'none', background: 'var(--bg-surface)' }} />
+                  </div>
+                ))}
+
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-3)', marginBottom: 5, fontWeight: 500 }}>Endereço</label>
+                  <input value={form.endereco} onChange={e => setForm(f => ({ ...f, endereco: e.target.value }))}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--aed-line-strong)', fontFamily: 'inherit', fontSize: 13, color: 'var(--fg-1)', outline: 'none', background: 'var(--bg-surface)' }} />
+                </div>
+
+                {([
+                  { label: 'Cidade', k: 'cidade' as const },
+                  { label: 'CEP', k: 'cep' as const },
+                ] as { label: string; k: keyof ReturnType<typeof emptyForm> }[]).map(({ label, k }) => (
+                  <div key={k}>
+                    <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-3)', marginBottom: 5, fontWeight: 500 }}>{label}</label>
+                    <input value={String(form[k] ?? '')} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--aed-line-strong)', fontFamily: 'inherit', fontSize: 13, color: 'var(--fg-1)', outline: 'none', background: 'var(--bg-surface)' }} />
+                  </div>
+                ))}
 
                 <div>
                   <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-3)', marginBottom: 5, fontWeight: 500 }}>Envio</label>
@@ -929,8 +931,18 @@ export default function OrdersPanel() {
                     <option value="retirada">Retirada</option>
                   </select>
                 </div>
-                <Field label="Pagamento" k="pgto" />
-                <Field label="Frete (R$)" k="frete" type="number" />
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-3)', marginBottom: 5, fontWeight: 500 }}>Pagamento</label>
+                  <input value={form.pgto} onChange={e => setForm(f => ({ ...f, pgto: e.target.value }))}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--aed-line-strong)', fontFamily: 'inherit', fontSize: 13, color: 'var(--fg-1)', outline: 'none', background: 'var(--bg-surface)' }} />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-3)', marginBottom: 5, fontWeight: 500 }}>Frete (R$)</label>
+                  <input type="number" value={form.frete} onChange={e => setForm(f => ({ ...f, frete: parseFloat(e.target.value) || 0 }))}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--aed-line-strong)', fontFamily: 'inherit', fontSize: 13, color: 'var(--fg-1)', outline: 'none', background: 'var(--bg-surface)' }} />
+                </div>
 
                 <div>
                   <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-3)', marginBottom: 5, fontWeight: 500 }}>Status do pedido</label>

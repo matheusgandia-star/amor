@@ -36,12 +36,31 @@ export default function ProductDetail({ product: p, category, whatsapp = '119863
         onClick={e => e.stopPropagation()}
       >
         <button onClick={onClose} style={{
-          background: 'none', border: 'none', color: 'var(--fg-2)',
-          fontSize: 13, cursor: 'pointer', marginBottom: 24,
-          display: 'inline-flex', alignItems: 'center', gap: 6,
+          display: 'inline-flex', alignItems: 'center', gap: 7,
+          padding: '9px 18px 9px 14px',
+          borderRadius: 'var(--r-pill)',
+          border: '1.5px solid var(--aed-line-strong)',
+          background: 'var(--bg-surface)',
+          color: 'var(--fg-2)',
+          fontSize: 13, fontWeight: 600,
+          cursor: 'pointer', marginBottom: 28,
           fontFamily: 'var(--font-body)',
-        }}>
-          <ChevronLeft size={16} />Voltar ao catálogo
+          boxShadow: 'var(--shadow-xs)',
+          transition: 'all 200ms ease',
+        }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.background = 'var(--aed-pink-mist)';
+            (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--aed-pink)';
+            (e.currentTarget as HTMLButtonElement).style.color = 'var(--aed-pink-deep)';
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-surface)';
+            (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--aed-line-strong)';
+            (e.currentTarget as HTMLButtonElement).style.color = 'var(--fg-2)';
+          }}
+        >
+          <ChevronLeft size={15} />
+          Voltar ao catálogo
         </button>
 
         <div className="aed-pdp-grid" style={{ background: 'var(--bg-page)', borderRadius: 'var(--r-xl)', padding: 32 }}>

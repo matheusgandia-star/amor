@@ -208,15 +208,15 @@ export default function Dashboard() {
   const recent = orders.slice(0, 5);
 
   return (
-    <div style={{ padding: '28px 36px 60px', display: 'flex', flexDirection: 'column', gap: 22 }}>
+    <div style={{ padding: 'clamp(16px,4vw,28px) clamp(16px,4vw,36px) 60px', display: 'flex', flexDirection: 'column', gap: 18 }}>
 
       {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }}>
+      <div className="aed-dash-kpi-grid">
         {kpis.map(k => <KpiCard key={k.label} k={k} />)}
       </div>
 
       {/* Chart row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.7fr 1fr', gap: 18 }}>
+      <div className="aed-dash-row">
         <div style={{
           background: 'var(--bg-surface)', borderRadius: 'var(--r-md)',
           boxShadow: 'var(--shadow-sm)', padding: 24,
@@ -266,7 +266,7 @@ export default function Dashboard() {
       </div>
 
       {/* Recent orders + side */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.7fr 1fr', gap: 18 }}>
+      <div className="aed-dash-row">
         <div style={{
           background: 'var(--bg-surface)', borderRadius: 'var(--r-md)',
           boxShadow: 'var(--shadow-sm)', overflow: 'hidden',
@@ -348,6 +348,28 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      <style>{`
+        .aed-dash-kpi-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 18px;
+        }
+        .aed-dash-row {
+          display: grid;
+          grid-template-columns: 1.7fr 1fr;
+          gap: 18px;
+        }
+        @media (max-width: 768px) {
+          .aed-dash-kpi-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+          }
+          .aed-dash-row {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </div>
   );
 }

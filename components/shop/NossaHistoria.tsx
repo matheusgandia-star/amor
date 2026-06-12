@@ -2,7 +2,7 @@ export default function NossaHistoria({ historiaImgUrl }: { historiaImgUrl?: str
   return (
     <section id="nossa-historia" style={{
       background: 'var(--aed-cream)',
-      padding: '96px 32px',
+      padding: 'clamp(56px, 8vw, 96px) clamp(20px, 5vw, 32px)',
       borderTop: '1px solid var(--aed-line)',
     }}>
       <div style={{
@@ -39,7 +39,7 @@ export default function NossaHistoria({ historiaImgUrl }: { historiaImgUrl?: str
             )}
           </div>
           {/* Badge flutuante */}
-          <div style={{
+          <div className="aed-historia-badge" style={{
             position: 'absolute', bottom: 24, right: 0,
             background: 'var(--bg-surface)', borderRadius: 'var(--r-md)',
             padding: '16px 20px', boxShadow: 'var(--shadow-md)',
@@ -83,27 +83,13 @@ export default function NossaHistoria({ historiaImgUrl }: { historiaImgUrl?: str
             Acreditamos que o cuidado pessoal é um ato de amor — por isso cada sabonete é embalado e entregue com a mesma atenção que colocamos ao fazê-lo.
           </p>
 
-          <div style={{ display: 'flex', gap: 32 }}>
-            {[
-              { n: '500+', label: 'Clientes felizes' },
-              { n: '100%', label: 'Natural' },
-              { n: '3 anos', label: 'De ateliê' },
-            ].map(s => (
-              <div key={s.label}>
-                <div style={{
-                  fontFamily: 'var(--font-display)', fontWeight: 600,
-                  fontSize: 28, color: 'var(--aed-pink-deep)',
-                }}>{s.n}</div>
-                <div style={{ fontSize: 12, color: 'var(--fg-3)' }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 
       <style>{`
         @media (max-width: 760px) {
-          .aed-historia-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
+          .aed-historia-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+          .aed-historia-badge { right: 16px !important; bottom: 16px !important; }
         }
       `}</style>
     </section>
