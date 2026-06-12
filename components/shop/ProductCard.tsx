@@ -1,55 +1,67 @@
 'use client';
 import { useState } from 'react';
-import { MessageCircle } from 'lucide-react';
 import type { Product, Category } from '@/types';
 
 interface ProductCardProps {
   product: Product;
   category?: Category;
-  whatsapp?: string;
   onOpen?: (product: Product) => void;
 }
 
-export function ProductCard({ product, category, whatsapp = '11986305013', onOpen }: ProductCardProps) {
-  const waMsg = encodeURIComponent(`Olá! Tenho interesse no produto: ${product.name}`);
-  const waLink = `https://wa.me/55${whatsapp.replace(/\D/g, '')}?text=${waMsg}`;
-  const thumb = product.photos?.[0];
+export function ProductCard({ product: p, category, onOpen }: ProductCardProps) {
+  const [hover, setHover] = useState(false);
+  const thumb = p.photos?.[0];
 
   return (
     <div
-      className="bg-[var(--bg-surface)] rounded-lg shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-      onClick={() => onOpen?.(product)}
-      style={{ borderTop: `3px solid ${product.color || 'var(--aed-pink-mist)'}` }}
+      onClick={() => onOpen?.(p)}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        background: 'var(--bg-surface)',
+        borderRadius: 'var(--r-lg)',
+        overflow: 'hidden',
+        cursor: 'pointer',
+        boxShadow: hover ? 'var(--shadow-md)' : 'var(--shadow-sm)',
+        transform: hover ? 'translateY(-4px)' : 'translateY(0)',
+        transition: 'all var(--dur-base) var(--ease-soft)',
+        display: 'flex', flexDirection: 'column',
+      }}
     >
-      <div className="aspect-square overflow-hidden bg-[var(--bg-surface-2)]">
+      <div style={{
+        position: 'relative', aspectRatio: '1/1',
+        background: `linear-gradient(135deg, ${p.color || '#F4A6AC'}, var(--aed-cream))`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        overflow: 'hidden',
+      }}>
         {thumb ? (
-          <img src={thumb} alt={product.name} className="w-full h-full object-cover" />
+          <img src={thumb} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : (
-          <div className="w-full h-full flex items-center justify-center" style={{ background: product.color || 'var(--aed-pink-mist)' }}>
-            <span className="text-4xl">🧼</span>
-          </div>
+          <div style={{
+            width: '62%', aspectRatio: '1.2/1', borderRadius: 'var(--r-md)',
+            background: p.accent || '#E88A92', opacity: 0.85,
+            boxShadow: 'inset 0 4px 14px rgba(255,255,255,.35), inset 0 -4px 14px rgba(0,0,0,.06)',
+          }} />
         )}
       </div>
-      <div className="p-3">
-        {category && (
-          <span className="text-xs text-[var(--fg-3)] uppercase tracking-wide">{category.name}</span>
-        )}
-        <h3 className="font-display text-lg font-light text-[var(--fg-1)] mt-0.5">{product.name}</h3>
-        {product.sub && <p className="text-xs text-[var(--fg-2)] mt-0.5 line-clamp-2">{product.sub}</p>}
-        <div className="flex items-center justify-between mt-3">
-          <span className="font-semibold text-[var(--aed-pink-deep)]">
-            R$ {product.price.toFixed(2).replace('.', ',')}
-          </span>
-          <a
-            href={waLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={e => e.stopPropagation()}
-            className="flex items-center gap-1 px-3 py-1.5 bg-[var(--aed-pink)] text-white text-xs font-medium rounded-pill hover:bg-[var(--aed-pink-deep)] transition-colors"
-          >
-            <MessageCircle size={12} />
-            Pedir
-          </a>
+
+      <div style={{ padding: '14px 16px 18px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{
+          fontSize: 10, textTransform: 'uppercase', letterSpacing: '.1em',
+          color: 'var(--aed-pink-deep)', fontWeight: 600,
+        }}>
+          {category?.name || p.sub}
+        </div>
+        <div style={{
+          fontFamily: 'var(--font-display)', fontWeight: 500,
+          fontSize: 18, color: 'var(--fg-1)',
+        }}>
+          {p.name}
+        </div>
+        <div style={{
+          fontSize: 14, color: 'var(--fg-1)', fontWeight: 600, marginTop: 4,
+        }}>
+          R$ {Number(p.price).toFixed(2).replace('.', ',')}
         </div>
       </div>
     </div>

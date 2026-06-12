@@ -12,66 +12,89 @@ interface HeroProps {
 export default function Hero({
   bannerUrl,
   bannerMobileUrl,
-  title = 'Sabonetes artesanais feitos com amor',
-  subtitle = 'Produtos naturais para cuidar de você',
+  title = 'Amor em cada detalhe',
+  subtitle = 'Sabonetes e produtos artesanais criados com ingredientes selecionados, aromas que despertam memórias e muito carinho em cada detalhe.',
   whatsapp = '11986305013',
 }: HeroProps) {
   const waLink = `https://wa.me/55${whatsapp.replace(/\D/g, '')}`;
-  const hasBanner = bannerUrl || bannerMobileUrl;
 
   return (
-    <section className="relative overflow-hidden bg-[var(--aed-pink-mist)]">
-      {hasBanner ? (
-        <div className="relative w-full">
-          {bannerUrl && (
-            <img
-              src={bannerUrl}
-              alt="Banner"
-              className={`w-full object-cover max-h-[600px] ${bannerMobileUrl ? 'hidden md:block' : ''}`}
-            />
-          )}
-          {bannerMobileUrl && (
-            <img
-              src={bannerMobileUrl}
-              alt="Banner"
-              className={`w-full object-cover max-h-[500px] ${bannerUrl ? 'md:hidden' : ''}`}
-            />
-          )}
-          <div className="absolute inset-0 bg-black/20 flex items-end pb-12 px-6 md:px-16">
-            <div className="max-w-lg">
-              <h1 className="font-display text-4xl md:text-5xl font-light text-white leading-tight mb-3">
-                {title}
-              </h1>
-              <p className="text-white/90 text-base mb-6">{subtitle}</p>
-              <a
-                href={waLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--aed-pink)] text-white font-medium rounded-pill hover:bg-[var(--aed-pink-deep)] transition-colors"
-              >
-                <MessageCircle size={16} />
-                Fale conosco
-              </a>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="max-w-6xl mx-auto px-4 py-20 md:py-28 text-center">
-          <h1 className="font-display text-4xl md:text-6xl font-light text-[var(--fg-1)] leading-tight mb-4">
-            {title}
+    <section style={{
+      background: 'linear-gradient(180deg, var(--aed-pink-mist) 0%, var(--aed-paper) 100%)',
+      padding: '80px 32px 96px',
+      position: 'relative', overflow: 'hidden',
+    }}>
+      <div className="aed-hero-grid" style={{ maxWidth: 1200, margin: '0 auto' }}>
+        {/* Texto */}
+        <div>
+          <div style={{
+            fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
+            letterSpacing: '.14em', color: 'var(--aed-pink-deep)', marginBottom: 16,
+          }}>· Coleção ·</div>
+
+          <h1 style={{
+            fontFamily: 'var(--font-display)', fontWeight: 300,
+            fontSize: 'clamp(42px, 5.2vw, 68px)', lineHeight: 1.05,
+            color: 'var(--aed-pink-deep)', margin: '0 0 8px',
+            letterSpacing: '-0.01em',
+          }}>
+            {title}{' '}
+            <span style={{ fontFamily: 'var(--font-script)', color: 'var(--aed-pink-signature)', fontWeight: 400 }}>
+              feito à mão
+            </span>
           </h1>
-          <p className="text-[var(--fg-2)] text-lg mb-8">{subtitle}</p>
-          <a
-            href={waLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-8 py-3 bg-[var(--aed-pink)] text-white font-medium rounded-pill hover:bg-[var(--aed-pink-deep)] transition-colors"
-          >
-            <MessageCircle size={16} />
-            Fale conosco
+
+          <p style={{
+            fontSize: 17, lineHeight: 1.6, color: 'var(--fg-2)',
+            maxWidth: 460, margin: '20px 0 32px',
+            fontFamily: 'var(--font-body)',
+          }}>
+            {subtitle}
+          </p>
+
+          <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 10,
+            textDecoration: 'none', fontFamily: 'var(--font-body)',
+            fontSize: 15, fontWeight: 600, color: '#fff',
+            background: '#25D366', padding: '16px 30px',
+            borderRadius: 'var(--r-pill)', boxShadow: 'var(--shadow-sm)',
+          }}>
+            <MessageCircle size={18} />
+            Descubra a coleção
           </a>
         </div>
-      )}
+
+        {/* Imagem */}
+        <div className="aed-hero-art" style={{ position: 'relative', aspectRatio: '4/5', maxHeight: 520 }}>
+          {bannerUrl || bannerMobileUrl ? (
+            <img
+              src={bannerUrl || bannerMobileUrl}
+              alt="Banner Amor em Dia"
+              style={{
+                position: 'absolute', inset: 0, width: '100%', height: '100%',
+                objectFit: 'cover', borderRadius: 'var(--r-xl)', boxShadow: 'var(--shadow-md)',
+              }}
+            />
+          ) : (
+            <div style={{
+              position: 'absolute', inset: 0, borderRadius: 'var(--r-xl)',
+              background: 'linear-gradient(145deg, var(--aed-pink-soft), var(--aed-cream) 70%)',
+              boxShadow: 'var(--shadow-md)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexDirection: 'column', gap: 8,
+            }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--aed-pink-deep)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--fg-3)' }}>
+                Adicione um banner no Admin
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </section>
   );
 }

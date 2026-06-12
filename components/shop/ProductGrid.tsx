@@ -11,56 +11,66 @@ interface ProductGridProps {
 }
 
 export default function ProductGrid({ products, categories, whatsapp }: ProductGridProps) {
-  const [activecat, setActivecat] = useState<string>('all');
+  const [activeCat, setActiveCat] = useState<string>('all');
   const [selected, setSelected] = useState<Product | null>(null);
 
   const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
-  const filtered = activecat === 'all' ? products : products.filter(p => p.cat === activecat);
+  const filtered = activeCat === 'all' ? products : products.filter(p => p.cat === activeCat);
+
+  const chipStyle = (active: boolean) => ({
+    display: 'inline-flex', alignItems: 'center',
+    fontSize: 13, padding: '8px 14px', borderRadius: 'var(--r-pill)',
+    border: `1px solid ${active ? 'var(--aed-pink)' : 'var(--aed-line)'}`,
+    background: active ? 'var(--aed-pink-mist)' : 'var(--bg-surface)',
+    color: active ? 'var(--aed-pink-deep)' : 'var(--fg-2)',
+    fontWeight: active ? 600 : 400,
+    cursor: 'pointer',
+    transition: 'all var(--dur-base) var(--ease-soft)',
+    fontFamily: 'var(--font-body)',
+  } as React.CSSProperties);
 
   return (
-    <section id="produtos" className="max-w-6xl mx-auto px-4 py-16">
-      <h2 className="font-display text-3xl md:text-4xl font-light text-center text-[var(--fg-1)] mb-8">
-        Nossos Produtos
-      </h2>
+    <section id="produtos" style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 32px' }}>
+      <div style={{ textAlign: 'center', marginBottom: 48 }}>
+        <div style={{
+          fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
+          letterSpacing: '.14em', color: 'var(--aed-pink-deep)', marginBottom: 10,
+        }}>· Catálogo ·</div>
+        <h2 style={{
+          fontFamily: 'var(--font-display)', fontWeight: 400,
+          fontSize: 'clamp(30px, 3.2vw, 44px)', color: 'var(--fg-1)',
+          margin: 0,
+        }}>Nossos Produtos</h2>
+      </div>
 
-      {/* Category filter */}
-      <div className="flex flex-wrap gap-2 justify-center mb-10">
-        <button
-          onClick={() => setActivecat('all')}
-          className={`px-4 py-1.5 rounded-pill text-sm transition-colors ${
-            activecat === 'all'
-              ? 'bg-[var(--aed-pink)] text-white'
-              : 'bg-[var(--aed-pink-mist)] text-[var(--fg-2)] hover:bg-[var(--aed-pink-blush)]'
-          }`}
-        >
-          Todos
+      {/* Filter chips */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 36 }}>
+        <button style={chipStyle(activeCat === 'all')} onClick={() => setActiveCat('all')}>
+          Tudo
         </button>
         {categories.map(cat => (
-          <button
-            key={cat.id}
-            onClick={() => setActivecat(cat.id)}
-            className={`px-4 py-1.5 rounded-pill text-sm transition-colors ${
-              activecat === cat.id
-                ? 'bg-[var(--aed-pink)] text-white'
-                : 'bg-[var(--aed-pink-mist)] text-[var(--fg-2)] hover:bg-[var(--aed-pink-blush)]'
-            }`}
-          >
+          <button key={cat.id} style={chipStyle(activeCat === cat.id)} onClick={() => setActiveCat(cat.id)}>
             {cat.name}
           </button>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="aed-pgrid">
         {filtered.map(p => (
           <ProductCard
             key={p.id}
             product={p}
             category={catMap[p.cat]}
-            whatsapp={whatsapp}
             onOpen={setSelected}
           />
         ))}
       </div>
+
+      {filtered.length === 0 && (
+        <p style={{ textAlign: 'center', color: 'var(--fg-3)', padding: '40px 0' }}>
+          Nenhum produto nesta categoria.
+        </p>
+      )}
 
       {selected && (
         <ProductDetail
