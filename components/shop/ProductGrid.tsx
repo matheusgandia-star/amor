@@ -30,21 +30,21 @@ export default function ProductGrid({ products, categories, whatsapp }: ProductG
   } as React.CSSProperties);
 
   return (
-    <section id="produtos" style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 32px' }}>
-      <div style={{ textAlign: 'center', marginBottom: 48 }}>
+    <section id="produtos" style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(48px, 8vw, 80px) clamp(20px, 5vw, 32px)' }}>
+      <div style={{ textAlign: 'center', marginBottom: 40 }}>
         <div style={{
           fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
           letterSpacing: '.14em', color: 'var(--aed-pink-deep)', marginBottom: 10,
         }}>· Catálogo ·</div>
         <h2 style={{
           fontFamily: 'var(--font-display)', fontWeight: 400,
-          fontSize: 'clamp(30px, 3.2vw, 44px)', color: 'var(--fg-1)',
+          fontSize: 'clamp(28px, 3.2vw, 44px)', color: 'var(--fg-1)',
           margin: 0,
         }}>Nossos Produtos</h2>
       </div>
 
       {/* Filter chips */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 36 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 32, justifyContent: 'center' }}>
         <button style={chipStyle(activeCat === 'all')} onClick={() => setActiveCat('all')}>
           Tudo
         </button>

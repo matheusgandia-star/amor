@@ -31,7 +31,7 @@ export default function Hero({
   return (
     <section style={{
       background: 'linear-gradient(180deg, var(--aed-pink-mist) 0%, var(--aed-paper) 100%)',
-      padding: '80px 32px 96px',
+      padding: 'clamp(40px, 8vw, 80px) clamp(20px, 5vw, 32px) clamp(48px, 8vw, 96px)',
       position: 'relative', overflow: 'hidden',
     }}>
       <div className="aed-hero-grid" style={{ maxWidth: 1200, margin: '0 auto' }}>
@@ -84,7 +84,7 @@ export default function Hero({
             ))}
           </div>
 
-          <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
+          <a href="#produtos" style={{
             display: 'inline-flex', alignItems: 'center', gap: 10,
             textDecoration: 'none', fontFamily: 'var(--font-body)',
             fontSize: 15, fontWeight: 600, color: '#fff',

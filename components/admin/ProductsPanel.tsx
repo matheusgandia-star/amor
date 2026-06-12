@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
-import { Plus, Star, Trash2, Pencil, X, LayoutGrid, List, Package, AlertTriangle } from 'lucide-react';
+import { Plus, Star, Trash2, Pencil, X, LayoutGrid, List, Package, AlertTriangle, Search } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { Product, Category } from '@/types';
 
@@ -34,6 +34,9 @@ export default function ProductsPanel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [search, setSearch] = useState('');
+  const [filterCat, setFilterCat] = useState('');
+  const [filterStock, setFilterStock] = useState<'all' | 'ok' | 'low' | 'out'>('all');
   const supabase = createClient();
 
   async function load() {
@@ -106,6 +109,15 @@ export default function ProductsPanel() {
 
   const catMap = Object.fromEntries(categories.map(c => [c.id, c.name]));
 
+  const filtered = products.filter(p => {
+    if (search && !p.name.toLowerCase().includes(search.toLowerCase()) && !p.sub?.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterCat && p.cat !== filterCat) return false;
+    if (filterStock === 'ok'  && !(p.stock > 5))   return false;
+    if (filterStock === 'low' && !(p.stock > 0 && p.stock <= 5)) return false;
+    if (filterStock === 'out' && p.stock !== 0)     return false;
+    return true;
+  });
+
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '9px 12px',
     borderRadius: 'var(--r-sm)', border: '1px solid var(--aed-line-strong)',
@@ -114,23 +126,44 @@ export default function ProductsPanel() {
   };
 
   return (
-    <div style={{ padding: '24px 32px' }}>
+    <div style={{ padding: 'clamp(16px,4vw,24px) clamp(16px,4vw,32px)' }}>
 
       {/* Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 13, color: 'var(--fg-3)' }}>
-            {products.length} produto{products.length !== 1 ? 's' : ''}
-            {products.filter(p => p.stock === 0).length > 0 && (
-              <span style={{ color: 'var(--aed-danger)', marginLeft: 8 }}>
-                · {products.filter(p => p.stock === 0).length} esgotado{products.filter(p => p.stock === 0).length !== 1 ? 's' : ''}
-              </span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+        {/* Row 1: search + actions */}
+        <div className="aed-products-toolbar-row">
+          {/* Search */}
+          <div style={{
+            flex: 1, display: 'flex', alignItems: 'center', gap: 8,
+            border: '1px solid var(--aed-line-strong)', borderRadius: 'var(--r-sm)',
+            padding: '8px 12px', background: 'var(--bg-surface)',
+          }}>
+            <Search size={14} color="var(--fg-3)" style={{ flexShrink: 0 }} />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar produto..."
+              style={{ border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 13, color: 'var(--fg-1)', width: '100%' }}
+            />
+            {search && (
+              <button onClick={() => setSearch('')} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--fg-3)', padding: 0, display: 'flex' }}>
+                <X size={13} />
+              </button>
             )}
-          </span>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+          </div>
+
+          {/* Category filter */}
+          <select value={filterCat} onChange={e => setFilterCat(e.target.value)} style={{
+            padding: '8px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--aed-line-strong)',
+            fontFamily: 'inherit', fontSize: 13, color: filterCat ? 'var(--fg-1)' : 'var(--fg-3)',
+            background: 'var(--bg-surface)', outline: 'none', cursor: 'pointer',
+          }}>
+            <option value="">Todas as categorias</option>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+
           {/* View toggle */}
-          <div style={{ display: 'flex', border: '1px solid var(--aed-line)', borderRadius: 'var(--r-sm)', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', border: '1px solid var(--aed-line)', borderRadius: 'var(--r-sm)', overflow: 'hidden', flexShrink: 0 }}>
             {(['list', 'grid'] as const).map(mode => (
               <button key={mode} onClick={() => setViewMode(mode)} style={{
                 padding: '7px 10px', border: 'none', cursor: 'pointer',
@@ -142,22 +175,53 @@ export default function ProductsPanel() {
               </button>
             ))}
           </div>
+
           <button onClick={() => setEditing(emptyProduct())} style={{
             display: 'flex', alignItems: 'center', gap: 7,
             padding: '9px 18px', borderRadius: 'var(--r-pill)',
             border: 'none', background: 'var(--aed-pink-deep)', color: '#fff',
             fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
-            cursor: 'pointer', boxShadow: 'var(--shadow-sm)',
+            cursor: 'pointer', boxShadow: 'var(--shadow-sm)', flexShrink: 0,
           }}>
             <Plus size={15} /> Novo produto
           </button>
         </div>
+
+        {/* Row 2: stock chips + count */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          {([
+            { id: 'all', label: 'Todos' },
+            { id: 'ok',  label: 'Em estoque' },
+            { id: 'low', label: 'Estoque baixo' },
+            { id: 'out', label: 'Esgotados' },
+          ] as { id: typeof filterStock; label: string }[]).map(chip => (
+            <button key={chip.id} onClick={() => setFilterStock(chip.id)} style={{
+              padding: '5px 13px', borderRadius: 'var(--r-pill)', cursor: 'pointer',
+              border: `1px solid ${filterStock === chip.id ? 'var(--aed-pink)' : 'var(--aed-line)'}`,
+              background: filterStock === chip.id ? 'var(--aed-pink-mist)' : 'transparent',
+              color: filterStock === chip.id ? 'var(--aed-pink-deep)' : 'var(--fg-3)',
+              fontSize: 12, fontWeight: filterStock === chip.id ? 600 : 400,
+              fontFamily: 'inherit',
+            }}>{chip.label}</button>
+          ))}
+          <span style={{ fontSize: 12, color: 'var(--fg-3)', marginLeft: 4 }}>
+            {filtered.length} de {products.length} produto{products.length !== 1 ? 's' : ''}
+            {products.filter(p => p.stock === 0).length > 0 && (
+              <span style={{ color: 'var(--aed-danger)', marginLeft: 6 }}>
+                · {products.filter(p => p.stock === 0).length} esgotado{products.filter(p => p.stock === 0).length !== 1 ? 's' : ''}
+              </span>
+            )}
+          </span>
+        </div>
       </div>
+
 
       {loading ? (
         <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>Carregando...</p>
-      ) : products.length === 0 ? (
-        <p style={{ fontSize: 13, color: 'var(--fg-3)', textAlign: 'center', padding: '48px 0', fontStyle: 'italic' }}>Nenhum produto cadastrado.</p>
+      ) : filtered.length === 0 ? (
+        <p style={{ fontSize: 13, color: 'var(--fg-3)', textAlign: 'center', padding: '48px 0', fontStyle: 'italic' }}>
+          {products.length === 0 ? 'Nenhum produto cadastrado.' : 'Nenhum produto encontrado com esses filtros.'}
+        </p>
       ) : viewMode === 'list' ? (
         /* ---- LIST VIEW ---- */
         <div style={{
@@ -166,27 +230,18 @@ export default function ProductsPanel() {
           overflow: 'hidden',
         }}>
           {/* Header */}
-          <div style={{
-            display: 'grid', gridTemplateColumns: '48px 1fr 140px 90px 100px 100px 80px',
-            padding: '10px 20px', borderBottom: '1px solid var(--aed-line)',
-            fontSize: 11, fontWeight: 600, color: 'var(--fg-3)',
-            textTransform: 'uppercase', letterSpacing: '.08em',
-          }}>
+          <div className="aed-plist-header">
             <span />
             <span>Produto</span>
-            <span>Categoria</span>
+            <span className="aed-plist-cat">Categoria</span>
             <span>Preço</span>
-            <span>Estoque</span>
-            <span>Destaque</span>
+            <span className="aed-plist-stock">Estoque</span>
+            <span className="aed-plist-dest">Destaque</span>
             <span style={{ textAlign: 'right' }}>Ações</span>
           </div>
 
-          {products.map(p => (
-            <div key={p.id} style={{
-              display: 'grid', gridTemplateColumns: '48px 1fr 140px 90px 100px 100px 80px',
-              padding: '12px 20px', borderTop: '1px solid var(--aed-line)',
-              alignItems: 'center', transition: 'background var(--dur-base)',
-            }}
+          {filtered.map(p => (
+            <div key={p.id} className="aed-plist-row"
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--aed-pink-blush)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
@@ -208,7 +263,7 @@ export default function ProductsPanel() {
               </div>
 
               {/* Category */}
-              <span style={{ fontSize: 12.5, color: 'var(--fg-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span className="aed-plist-cat" style={{ fontSize: 12.5, color: 'var(--fg-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {catMap[p.cat] ?? <span style={{ color: 'var(--fg-3)', fontStyle: 'italic' }}>Sem categoria</span>}
               </span>
 
@@ -218,10 +273,10 @@ export default function ProductsPanel() {
               </span>
 
               {/* Stock */}
-              <StockBadge stock={p.stock ?? 0} />
+              <span className="aed-plist-stock"><StockBadge stock={p.stock ?? 0} /></span>
 
               {/* Destaque toggle */}
-              <button onClick={() => toggleFav(p.id, p.fav)} title={p.fav ? 'Remover destaque' : 'Marcar como destaque'} style={{
+              <span className="aed-plist-dest"><button onClick={() => toggleFav(p.id, p.fav)} title={p.fav ? 'Remover destaque' : 'Marcar como destaque'} style={{
                 display: 'inline-flex', alignItems: 'center', gap: 5,
                 padding: '4px 10px', borderRadius: 'var(--r-pill)',
                 border: `1px solid ${p.fav ? '#F9E25A' : 'var(--aed-line)'}`,
@@ -232,7 +287,7 @@ export default function ProductsPanel() {
               }}>
                 <Star size={12} fill={p.fav ? 'currentColor' : 'none'} />
                 {p.fav ? 'Destaque' : '—'}
-              </button>
+              </button></span>
 
               {/* Actions */}
               <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
@@ -253,7 +308,7 @@ export default function ProductsPanel() {
       ) : (
         /* ---- GRID VIEW ---- */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {products.map(p => (
+          {filtered.map(p => (
             <div key={p.id} style={{
               background: 'var(--bg-surface)', borderRadius: 'var(--r-md)',
               border: '1px solid var(--aed-line)', overflow: 'hidden',
@@ -304,6 +359,42 @@ export default function ProductsPanel() {
           ))}
         </div>
       )}
+
+      <style>{`
+        .aed-products-toolbar-row {
+          display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        }
+        .aed-plist-header {
+          display: grid;
+          grid-template-columns: 48px 1fr 140px 90px 100px 100px 80px;
+          padding: 10px 20px;
+          border-bottom: 1px solid var(--aed-line);
+          font-size: 11px; font-weight: 600; color: var(--fg-3);
+          text-transform: uppercase; letter-spacing: .08em;
+        }
+        .aed-plist-row {
+          display: grid;
+          grid-template-columns: 48px 1fr 140px 90px 100px 100px 80px;
+          padding: 12px 20px;
+          border-top: 1px solid var(--aed-line);
+          align-items: center;
+          transition: background var(--dur-base);
+        }
+        .aed-plist-row:hover { background: var(--aed-pink-blush); }
+        @media (max-width: 768px) {
+          .aed-products-toolbar-row { gap: 8px; }
+          .aed-products-toolbar-row > select { display: none; }
+          .aed-plist-header,
+          .aed-plist-row {
+            grid-template-columns: 40px 1fr 80px 60px;
+          }
+          .aed-plist-cat,
+          .aed-plist-stock,
+          .aed-plist-dest { display: none !important; }
+          .aed-plist-header { padding: 8px 14px; }
+          .aed-plist-row { padding: 10px 14px; }
+        }
+      `}</style>
 
       {/* ====== EDIT MODAL ====== */}
       {editing && (

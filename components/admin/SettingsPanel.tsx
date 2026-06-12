@@ -4,6 +4,23 @@ import { Upload, X, ImageIcon } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { SiteSettings } from '@/types';
 
+const settingsInputStyle: React.CSSProperties = {
+  width: '100%', padding: '9px 12px', borderRadius: 'var(--r-sm)',
+  border: '1px solid var(--aed-line-strong)', fontFamily: 'inherit',
+  fontSize: 13, color: 'var(--fg-1)', outline: 'none', background: 'var(--bg-surface)',
+};
+
+function SettingsField({ label, value, onChange, type = 'text' }: {
+  label: string; value: string; onChange: (v: string) => void; type?: string;
+}) {
+  return (
+    <div>
+      <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-3)', marginBottom: 5, fontWeight: 500 }}>{label}</label>
+      <input type={type} value={value} onChange={e => onChange(e.target.value)} style={settingsInputStyle} />
+    </div>
+  );
+}
+
 const defaultSettings: Omit<SiteSettings, 'updated_at'> = {
   mode: 'catalogo', whatsapp: '11986305013', instagram: '@amoremdia.atelie',
   banner_url: '', banner_mobile_url: '', historia_img_url: '',
@@ -104,30 +121,10 @@ export default function SettingsPanel() {
 
   if (loading) return <p style={{ fontSize: 13, color: 'var(--fg-3)', padding: '24px 32px' }}>Carregando...</p>;
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '9px 12px', borderRadius: 'var(--r-sm)',
-    border: '1px solid var(--aed-line-strong)', fontFamily: 'inherit',
-    fontSize: 13, color: 'var(--fg-1)', outline: 'none', background: 'var(--bg-surface)',
-  };
-
   const sectionLabel: React.CSSProperties = {
     fontSize: 10, textTransform: 'uppercase', letterSpacing: '.1em',
     color: 'var(--fg-3)', fontWeight: 700, marginBottom: 14,
   };
-
-  function Field({ label, k, type = 'text' }: { label: string; k: keyof typeof settings; type?: string }) {
-    return (
-      <div>
-        <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-3)', marginBottom: 5, fontWeight: 500 }}>{label}</label>
-        <input
-          type={type}
-          value={(settings as any)[k] ?? ''}
-          onChange={e => setSettings(s => ({ ...s, [k]: e.target.value }))}
-          style={inputStyle}
-        />
-      </div>
-    );
-  }
 
   return (
     <form onSubmit={handleSave} style={{ padding: '24px 32px', maxWidth: 560, display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -138,7 +135,7 @@ export default function SettingsPanel() {
         <select
           value={settings.mode}
           onChange={e => setSettings(s => ({ ...s, mode: e.target.value as 'catalogo' | 'loja' }))}
-          style={inputStyle}
+          style={settingsInputStyle}
         >
           <option value="catalogo">Catálogo (contato via WhatsApp)</option>
           <option value="loja">Loja (com carrinho e checkout)</option>
@@ -146,8 +143,8 @@ export default function SettingsPanel() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <Field label="WhatsApp (somente números)" k="whatsapp" />
-        <Field label="Instagram (com @)" k="instagram" />
+        <SettingsField label="WhatsApp (somente números)" value={settings.whatsapp} onChange={v => setSettings(s => ({ ...s, whatsapp: v }))} />
+        <SettingsField label="Instagram (com @)" value={settings.instagram} onChange={v => setSettings(s => ({ ...s, instagram: v }))} />
       </div>
 
       <hr style={{ border: 'none', borderTop: '1px solid var(--aed-line)' }} />
@@ -311,8 +308,8 @@ export default function SettingsPanel() {
       <div>
         <p style={sectionLabel}>Textos do hero</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <Field label="Título" k="hero_title" />
-          <Field label="Subtítulo" k="hero_subtitle" />
+          <SettingsField label="Título" value={settings.hero_title} onChange={v => setSettings(s => ({ ...s, hero_title: v }))} />
+          <SettingsField label="Subtítulo" value={settings.hero_subtitle} onChange={v => setSettings(s => ({ ...s, hero_subtitle: v }))} />
         </div>
       </div>
 
@@ -322,9 +319,9 @@ export default function SettingsPanel() {
       <div>
         <p style={sectionLabel}>SEO</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <Field label="Título da página" k="seo_title" />
-          <Field label="Descrição meta" k="seo_description" />
-          <Field label="URL do favicon" k="favicon_url" />
+          <SettingsField label="Título da página" value={settings.seo_title} onChange={v => setSettings(s => ({ ...s, seo_title: v }))} />
+          <SettingsField label="Descrição meta" value={settings.seo_description} onChange={v => setSettings(s => ({ ...s, seo_description: v }))} />
+          <SettingsField label="URL do favicon" value={settings.favicon_url ?? ''} onChange={v => setSettings(s => ({ ...s, favicon_url: v }))} />
         </div>
       </div>
 

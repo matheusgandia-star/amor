@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, Pencil, Check, X, Star, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Pencil, Check, X, Star, ChevronUp, ChevronDown, Save } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { Category } from '@/types';
 
@@ -10,6 +10,9 @@ export default function CategoriesPanel() {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [orderChanged, setOrderChanged] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const [savedOrder, setSavedOrder] = useState(false);
   const supabase = createClient();
 
   async function load() {
@@ -24,14 +27,16 @@ export default function CategoriesPanel() {
     e.preventDefault();
     if (!newName.trim()) return;
     const maxOrder = categories.reduce((m, c) => Math.max(m, c.sort_order ?? 0), 0);
-    await supabase.from('categories').insert({ name: newName.trim(), sort_order: maxOrder + 1, featured: false });
+    const { error } = await supabase.from('categories').insert({ name: newName.trim(), sort_order: maxOrder + 1, featured: false });
+    if (error) { alert('Erro ao cadastrar categoria: ' + error.message); return; }
     setNewName('');
     load();
   }
 
   async function handleRename(id: string) {
     if (!editingName.trim()) return;
-    await supabase.from('categories').update({ name: editingName.trim() }).eq('id', id);
+    const { error } = await supabase.from('categories').update({ name: editingName.trim() }).eq('id', id);
+    if (error) { alert('Erro ao renomear: ' + error.message); return; }
     setEditingId(null);
     load();
   }
@@ -48,21 +53,27 @@ export default function CategoriesPanel() {
     setCategories(cs => cs.map(c => c.id === cat.id ? { ...c, featured: next } : c));
   }
 
-  async function move(index: number, dir: -1 | 1) {
+  function move(index: number, dir: -1 | 1) {
     const arr = [...categories];
     const swapIndex = index + dir;
     if (swapIndex < 0 || swapIndex >= arr.length) return;
-
-    const aOrder = arr[index].sort_order ?? index;
-    const bOrder = arr[swapIndex].sort_order ?? swapIndex;
-
-    await Promise.all([
-      supabase.from('categories').update({ sort_order: bOrder }).eq('id', arr[index].id),
-      supabase.from('categories').update({ sort_order: aOrder }).eq('id', arr[swapIndex].id),
-    ]);
-
     [arr[index], arr[swapIndex]] = [arr[swapIndex], arr[index]];
     setCategories(arr);
+    setOrderChanged(true);
+    setSavedOrder(false);
+  }
+
+  async function saveOrder() {
+    setSavingOrder(true);
+    await Promise.all(
+      categories.map((cat, i) =>
+        supabase.from('categories').update({ sort_order: i + 1 }).eq('id', cat.id)
+      )
+    );
+    setSavingOrder(false);
+    setOrderChanged(false);
+    setSavedOrder(true);
+    setTimeout(() => setSavedOrder(false), 2500);
   }
 
   const inputStyle: React.CSSProperties = {
@@ -212,7 +223,36 @@ export default function CategoriesPanel() {
         </div>
       )}
 
-      <p style={{ marginTop: 16, fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.5 }}>
+      {orderChanged && (
+        <div style={{
+          marginTop: 16, display: 'flex', alignItems: 'center', gap: 12,
+          padding: '12px 16px', borderRadius: 'var(--r-md)',
+          background: 'var(--aed-pink-mist)', border: '1px solid var(--aed-pink-soft)',
+        }}>
+          <span style={{ flex: 1, fontSize: 12, color: 'var(--aed-pink-deep)', fontWeight: 500 }}>
+            Ordem alterada — salve para aplicar no site.
+          </span>
+          <button onClick={saveOrder} disabled={savingOrder} style={{
+            display: 'flex', alignItems: 'center', gap: 7,
+            padding: '8px 18px', borderRadius: 'var(--r-pill)',
+            border: 'none', background: 'var(--aed-pink-deep)', color: '#fff',
+            fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
+            cursor: savingOrder ? 'not-allowed' : 'pointer',
+            opacity: savingOrder ? 0.7 : 1,
+          }}>
+            <Save size={14} />
+            {savingOrder ? 'Salvando...' : 'Salvar ordem'}
+          </button>
+        </div>
+      )}
+
+      {savedOrder && !orderChanged && (
+        <p style={{ marginTop: 14, fontSize: 12, color: 'var(--aed-success)', fontWeight: 600 }}>
+          ✓ Ordem salva com sucesso!
+        </p>
+      )}
+
+      <p style={{ marginTop: 14, fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.5 }}>
         Use as setas para definir a ordem de exibição das categorias no site. Categorias em <strong>Destaque</strong> aparecem em evidência.
       </p>
 
