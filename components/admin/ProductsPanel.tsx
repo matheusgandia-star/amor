@@ -33,13 +33,17 @@ export default function ProductsPanel() {
   async function handleSave() {
     if (!editing || !editing.name?.trim()) return;
     setSaving(true);
+    const payload = { ...editing, cat: editing.cat || null };
+    let error;
     if (editing.id) {
-      const { id, created_at, ...rest } = editing as Product;
-      await supabase.from('products').update(rest).eq('id', id);
+      const { id, created_at, ...rest } = payload as Product;
+      ({ error } = await supabase.from('products').update(rest).eq('id', id));
     } else {
-      await supabase.from('products').insert(editing);
+      const { id, created_at, ...rest } = payload as Product;
+      ({ error } = await supabase.from('products').insert(rest));
     }
     setSaving(false);
+    if (error) { alert('Erro ao salvar: ' + error.message); return; }
     setEditing(null);
     load();
   }
