@@ -13,7 +13,7 @@ export default async function Home() {
 
   const [{ data: products }, { data: categories }, { data: settingsRow }] = await Promise.all([
     supabase.from('products').select('*').order('created_at', { ascending: false }),
-    supabase.from('categories').select('*').order('name'),
+    supabase.from('categories').select('*').order('sort_order', { ascending: true }).order('name'),
     supabase.from('settings').select('*').eq('id', 1).single(),
   ]);
 
